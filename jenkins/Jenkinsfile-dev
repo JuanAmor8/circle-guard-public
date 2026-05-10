@@ -59,12 +59,14 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                def serviceName = getServiceName()
-                sh """
-                    if [ -f "services/circleguard-${serviceName}/gradlew" ]; then
-                        ./gradlew dependencyCheckAnalyze --no-daemon -q || true
-                    fi
-                """
+                script {
+                    def serviceName = getServiceName()
+                    sh """
+                        if [ -f "services/circleguard-${serviceName}/gradlew" ]; then
+                            ./gradlew dependencyCheckAnalyze --no-daemon -q || true
+                        fi
+                    """
+                }
             }
         }
 
