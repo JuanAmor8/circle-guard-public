@@ -53,11 +53,6 @@ pipeline {
             steps {
                 sh "./gradlew :services:circleguard-${SERVICE_NAME}-service:test --no-daemon -q || true"
             }
-            post {
-                always {
-                    junit 'services/**/build/test-results/**/*.xml' || true
-                }
-            }
         }
 
         stage('Docker Build') {
