@@ -12,7 +12,7 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE = "circleguard/${getServiceName()}"
+        DOCKER_IMAGE = "circleguard/${getServiceName()}-service"
         DOCKER_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT[0..7]}"
     }
 
@@ -34,7 +34,7 @@ pipeline {
 
         stage('Build & Compile') {
             steps {
-                dir("services/circleguard-${getServiceName()}") {
+                dir("services/circleguard-${getServiceName()}-service") {
                     sh """
                         ./gradlew compileKotlin compileTestKotlin --no-daemon -q
                     """
@@ -44,7 +44,7 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                dir("services/circleguard-${getServiceName()}") {
+                dir("services/circleguard-${getServiceName()}-service") {
                     sh """
                         ./gradlew test --no-daemon -q
                     """
