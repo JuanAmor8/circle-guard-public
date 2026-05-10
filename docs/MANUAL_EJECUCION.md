@@ -10,12 +10,12 @@ Antes de comenzar, verifica que todo está en su lugar:
 
 ```powershell
 # Verificar estructura
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\docker
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\jenkins
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\k8s
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\tests
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\scripts
-Get-ChildItem C:\Users\Administrator\Videos\circle-guard-public\docs
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\docker
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\jenkins
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\k8s
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\tests
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\scripts
+Get-ChildItem C:\Users\juanc\Videos\circle-guard-public\docs
 ```
 
 Debes ver:
@@ -102,8 +102,8 @@ Para **cada servicio**, crea un nuevo item:
 1. **New Item** → nombre: `circleguard-auth-service-dev`
 2. Tipo: **Multibranch Pipeline**
 3. Branch Sources → **Add source** → Git:
-   - Repository URL: `https://github.com/jcmunozf/circle-guard-public.git`
-   - Credentials: (tu token GitHub o anonymous)
+    - Repository URL: `https://github.com/JuanAmor8/circle-guard-public.git`
+    - Credentials: (tu token GitHub o anonymous)
 4. Build Configuration → Mode: **by Jenkinsfile**
    - Script Path: `jenkins/Jenkinsfile-dev`
 5. **Add Property**: `SERVICE_NAME` = `auth`
