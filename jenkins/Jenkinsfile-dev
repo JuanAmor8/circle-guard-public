@@ -34,22 +34,24 @@ pipeline {
 
         stage('Build & Compile') {
             steps {
-                dir("services/circleguard-${getServiceName()}-service") {
-                    sh """
-                        ./gradlew compileKotlin compileTestKotlin --no-daemon -q
-                    """
-                }
+                sh """
+                    ./gradlew :services:circleguard-${getServiceName()}-service:compileKotlin :services:circleguard-${getServiceName()}-service:compileTestKotlin --no-daemon -q
+                """
             }
         }
 
         stage('Unit Tests') {
             steps {
-                dir("services/circleguard-${getServiceName()}-service") {
-                    sh """
-                        ./gradlew test --no-daemon -q
-                    """
+                sh """
+                    ./gradlew :services:circleguard-${getServiceName()}-service:test --no-daemon -q
+                """
+            }
+            post {
+                always {
+                    junit 'services/**/build/test-results/**/*.xml'
                 }
             }
+        }
             post {
                 always {
                     junit 'services/**/build/test-results/**/*.xml'
