@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'docker.io'
         DOCKER_IMAGE = "circleguard/${env.SERVICE_NAME}"
-        KUBECONFIG = credentials('kubeconfig-master')
         RELEASE_VERSION = ''
     }
 
@@ -87,7 +86,7 @@ pipeline {
         stage('Deploy to Production K8s') {
             steps {
                 sh """
-                    kubectl config use-context master
+                    kubectl config use-context docker-desktop
                     kubectl apply -f k8s/namespaces/ -n circleguard-master 2>/dev/null || true
                     kubectl set image deployment/\${SERVICE_NAME} \
                         \${SERVICE_NAME}=${DOCKER_IMAGE}:${env.RELEASE_VERSION} \

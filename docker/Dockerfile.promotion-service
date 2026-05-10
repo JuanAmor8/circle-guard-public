@@ -7,7 +7,7 @@ RUN gradle build -x test --no-daemon
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/services/circleguard-promotion-service/build/libs/*.jar app.jar
-COPY services/circleguard-promotion-service/src/main/resources/seed_faculties.cypher /app/seed.cypher 2>/dev/null || true
+RUN cp services/circleguard-promotion-service/src/main/resources/seed_faculties.cypher /app/seed.cypher 2>/dev/null || true
 
 EXPOSE 8088
 ENTRYPOINT ["java", "-jar", "app.jar"]

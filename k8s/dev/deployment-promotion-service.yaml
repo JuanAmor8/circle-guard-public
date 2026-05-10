@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: promotion-service
-        image: circleguard/promotion-service:latest
+        image: juanamor8/circleguard-promotion-service:latest
         ports:
         - containerPort: 8088
         env:

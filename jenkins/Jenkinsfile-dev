@@ -1,11 +1,19 @@
+def getServiceName() {
+    def jobName = env.JOB_NAME ?: 'auth'
+    def parts = jobName.split('-')
+    if (parts.length >= 3) {
+        return parts[1]
+    }
+    return 'auth'
+}
+
 pipeline {
     agent any
 
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE = "circleguard/${env.SERVICE_NAME}"
+        DOCKER_IMAGE = "circleguard/${getServiceName()}"
         DOCKER_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT[0..7]}"
-        KUBECONFIG = credentials('kubeconfig-dev')
     }
 
     options {
@@ -26,7 +34,7 @@ pipeline {
 
         stage('Build & Compile') {
             steps {
-                dir("services/circleguard-${env.SERVICE_NAME}") {
+                dir("services/circleguard-${getServiceName()}") {
                     sh """
                         ./gradlew compileKotlin compileTestKotlin --no-daemon -q
                     """
@@ -36,7 +44,7 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                dir("services/circleguard-${env.SERVICE_NAME}") {
+                dir("services/circleguard-${getServiceName()}") {
                     sh """
                         ./gradlew test --no-daemon -q
                     """
@@ -51,18 +59,19 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                sh '''
-                    if [ -f "services/circleguard-${SERVICE_NAME}/gradlew" ]; then
+                def serviceName = getServiceName()
+                sh """
+                    if [ -f "services/circleguard-${serviceName}/gradlew" ]; then
                         ./gradlew dependencyCheckAnalyze --no-daemon -q || true
                     fi
-                '''
+                """
             }
         }
 
         stage('Docker Build') {
             steps {
                 script {
-                    def dockerfile = "docker/Dockerfile.${env.SERVICE_NAME}"
+                    def dockerfile = "docker/Dockerfile.${getServiceName()}"
                     sh """
                         docker build -f ${dockerfile} \
                             --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -104,10 +113,10 @@ pipeline {
             }
             steps {
                 sh """
-                    kubectl config use-context dev
+                    kubectl config use-context docker-desktop
                     kubectl apply -f k8s/namespaces/ -n circleguard-dev 2>/dev/null || true
                     kubectl apply -f k8s/dev/ -n circleguard-dev
-                    kubectl rollout status deployment/\${SERVICE_NAME} -n circleguard-dev --timeout=300s || true
+                    kubectl rollout status deployment/${getServiceName()} -n circleguard-dev --timeout=300s || true
                 """
             }
         }
@@ -115,10 +124,10 @@ pipeline {
         stage('Smoke Tests') {
             steps {
                 script {
-                    def port = getServicePort(env.SERVICE_NAME)
+                    def port = getServicePort(getServiceName())
                     sh """
                         sleep 10
-                        kubectl exec -n circleguard-dev deployment/\${SERVICE_NAME} -- \
+                        kubectl exec -n circleguard-dev deployment/${getServiceName()} -- \
                             wget -qO- http://localhost:${port}/actuator/health || \
                             curl -sf http://localhost:${port}/actuator/health || true
                     """
@@ -129,10 +138,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline \${SERVICE_NAME} completed successfully!"
+            echo "Pipeline ${getServiceName()} completed successfully!"
         }
         failure {
-            echo "Pipeline \${SERVICE_NAME} failed!"
+            echo "Pipeline ${getServiceName()} failed!"
         }
         always {
             cleanWs()

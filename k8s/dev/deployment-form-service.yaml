@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: form-service
-        image: circleguard/form-service:latest
+        image: juanamor8/circleguard-form-service:latest
         ports:
         - containerPort: 8086
         env:

@@ -8,18 +8,15 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       POSTGRES_DB: circleguard
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - circleguard-net
 
   neo4j:
     image: neo4j:5.26
     container_name: circleguard-neo4j
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     environment:
       NEO4J_AUTH: neo4j/password
       NEO4J_PLUGINS: '["apoc"]'
@@ -27,6 +24,8 @@ services:
       NEO4J_dbms_connector_bolt_advertised__address: :7687
     volumes:
       - neo4jdata:/data
+    networks:
+      - circleguard-net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -34,39 +33,44 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - circleguard-net
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: circleguard-kafka
     depends_on:
       - zookeeper
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - circleguard-net
 
   redis:
     image: redis:7.2
     container_name: circleguard-redis
-    ports:
-      - "6379:6379"
+    networks:
+      - circleguard-net
 
   openldap:
     image: osixia/openldap:1.5.0
     container_name: circleguard-ldap
-    ports:
-      - "389:389"
-      - "636:636"
     environment:
       LDAP_ORGANISATION: "CircleGuard"
       LDAP_DOMAIN: "circleguard.edu"
       LDAP_ADMIN_PASSWORD: "admin"
+    networks:
+      - circleguard-net
 
 volumes:
   pgdata:
   neo4jdata:
+
+networks:
+  circleguard-net:
+    driver: bridge
