@@ -7,12 +7,25 @@ def getServiceName() {
     return 'auth'
 }
 
+def getServicePort(String serviceName) {
+    def ports = [
+        'auth': '8180',
+        'identity': '8083',
+        'gateway': '8087',
+        'form': '8086',
+        'notification': '8082',
+        'promotion': '8088'
+    ]
+    return ports[serviceName] ?: '8080'
+}
+
 pipeline {
     agent any
 
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE = "circleguard/${getServiceName()}-service"
+        SERVICE_NAME = getServiceName()
+        DOCKER_IMAGE = "circleguard/${SERVICE_NAME}-service"
         DOCKER_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT[0..7]}"
     }
 
@@ -25,33 +38,21 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    echo "Building ${env.SERVICE_NAME} from commit ${env.GIT_COMMIT[0..7]}"
-                }
+                echo "Building ${SERVICE_NAME} from commit ${env.GIT_COMMIT[0..7]}"
                 checkout scm
             }
         }
 
         stage('Build & Compile') {
             steps {
-                sh """
-                    ./gradlew :services:circleguard-${getServiceName()}-service:compileKotlin :services:circleguard-${getServiceName()}-service:compileTestKotlin --no-daemon -q
-                """
+                sh "./gradlew :services:circleguard-${SERVICE_NAME}-service:compileKotlin :services:circleguard-${SERVICE_NAME}-service:compileTestKotlin --no-daemon -q"
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh """
-                    ./gradlew :services:circleguard-${getServiceName()}-service:test --no-daemon -q
-                """
+                sh "./gradlew :services:circleguard-${SERVICE_NAME}-service:test --no-daemon -q"
             }
-            post {
-                always {
-                    junit 'services/**/build/test-results/**/*.xml'
-                }
-            }
-        }
             post {
                 always {
                     junit 'services/**/build/test-results/**/*.xml'
@@ -61,53 +62,28 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                script {
-                    def serviceName = getServiceName()
-                    sh """
-                        if [ -f "services/circleguard-${serviceName}/gradlew" ]; then
-                            ./gradlew dependencyCheckAnalyze --no-daemon -q || true
-                        fi
-                    """
-                }
+                sh "./gradlew dependencyCheckAnalyze --no-daemon -q || true"
             }
         }
 
         stage('Docker Build') {
             steps {
-                script {
-                    def dockerfile = "docker/Dockerfile.${getServiceName()}"
-                    sh """
-                        docker build -f ${dockerfile} \
-                            --build-arg BUILDKIT_INLINE_CACHE=1 \
-                            -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                            -t ${DOCKER_IMAGE}:latest .
-                    """
-                }
+                sh "docker build -f docker/Dockerfile.${SERVICE_NAME}-service --build-arg BUILDKIT_INLINE_CACHE=1 -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:latest ."
             }
         }
 
         stage('Docker Security Scan') {
             steps {
-                sh """
-                    docker run --rm aquasec/trivy image \
-                        --severity HIGH,CRITICAL \
-                        --exit-code 0 \
-                        ${DOCKER_IMAGE}:${DOCKER_TAG} || true
-                """
+                sh "docker run --rm aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
             }
         }
 
         stage('Push to Registry') {
+            when {
+                anyOf { branch 'master' }
+            }
             steps {
-                script {
-                    if (env.BRANCH_NAME == 'master') {
-                        sh """
-                            docker login -u \${DOCKER_USERNAME} -p \${DOCKER_PASSWORD}
-                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker push ${DOCKER_IMAGE}:latest
-                        """
-                    }
-                }
+                sh "docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD} && docker push ${DOCKER_IMAGE}:${DOCKER_TAG} && docker push ${DOCKER_IMAGE}:latest"
             }
         }
 
@@ -116,51 +92,26 @@ pipeline {
                 anyOf { branch 'master'; branch 'develop' }
             }
             steps {
-                sh """
-                    kubectl config use-context docker-desktop
-                    kubectl apply -f k8s/namespaces/ -n circleguard-dev 2>/dev/null || true
-                    kubectl apply -f k8s/dev/ -n circleguard-dev
-                    kubectl rollout status deployment/${getServiceName()} -n circleguard-dev --timeout=300s || true
-                """
+                sh "kubectl config use-context docker-desktop && kubectl apply -f k8s/namespaces/ 2>/dev/null || true && kubectl apply -f k8s/dev/ && kubectl rollout status deployment/${SERVICE_NAME}-service -n circleguard-dev --timeout=300s || true"
             }
         }
 
         stage('Smoke Tests') {
             steps {
-                script {
-                    def port = getServicePort(getServiceName())
-                    sh """
-                        sleep 10
-                        kubectl exec -n circleguard-dev deployment/${getServiceName()} -- \
-                            wget -qO- http://localhost:${port}/actuator/health || \
-                            curl -sf http://localhost:${port}/actuator/health || true
-                    """
-                }
+                sh "sleep 10 && curl -sf http://localhost:${getServicePort(SERVICE_NAME)}/actuator/health || true"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline ${getServiceName()} completed successfully!"
+            echo "Pipeline ${SERVICE_NAME} completed successfully!"
         }
         failure {
-            echo "Pipeline ${getServiceName()} failed!"
+            echo "Pipeline ${SERVICE_NAME} failed!"
         }
         always {
             cleanWs()
         }
     }
-}
-
-def getServicePort(String serviceName) {
-    def ports = [
-        'auth': '8180',
-        'identity': '8083',
-        'gateway': '8087',
-        'form': '8086',
-        'notification': '8082',
-        'promotion': '8088'
-    ]
-    return ports[serviceName] ?: '8080'
 }
