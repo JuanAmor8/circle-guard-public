@@ -181,12 +181,18 @@ Todos los 6 jobs DEV ejecutaron exitosamente:
 
 > **Pantallazo:** Jenkins Dashboard mostrando los 6 Multibranch Pipeline en azul.
 
+![Jenkins DEV Jobs](image.png)
+
+![Jenkins Todos los Jobs SUCCESS](image-4.png)
+
 **Verificación en Kubernetes:**
 
 ```bash
 kubectl get pods -n circleguard-dev
 # Deployments aplicados para los 6 servicios + infraestructura (postgres, redis, kafka, zookeeper, neo4j)
 ```
+
+![kubectl get pods -n circleguard-dev](image-2.png)
 
 ---
 
@@ -272,7 +278,9 @@ Tests: 20 total, 0 failed, 0 skipped
 ./gradlew :tests:integration-tests:test --no-daemon
 ```
 
-> **Pantallazo:** Build log mostrando `BUILD SUCCESSFUL` con `20 tests completed, 0 failed`.
+> **Pantallazo:** Test Summary — 20 tests, 0 failures, 100% successful.
+
+![Integration Tests 20/20 PASS](image-1.png)
 
 ---
 
@@ -416,6 +424,8 @@ kubectl get pods -n circleguard-stage
 # Deployments configurados para los 6 servicios
 ```
 
+![kubectl get pods -n circleguard-stage](image-3.png)
+
 ---
 
 ## 5. Pipeline MASTER + Release Notes
@@ -502,6 +512,8 @@ kubectl annotate deployment/${SERVICE_NAME}-service \
 git tag -l
 # v1.0.0
 ```
+
+![git tag -l mostrando v1.0.0](image-5.png)
 
 **Release Notes generadas (`RELEASE_NOTES.md`):**
 
