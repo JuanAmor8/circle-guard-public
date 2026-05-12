@@ -31,7 +31,7 @@ spec:
         - name: SPRING_DATASOURCE_PASSWORD
           value: "password"
         - name: SPRING_LDAP_URLS
-          value: "ldap://openldap:389"
+          value: "ldap://host.docker.internal:389"
         - name: SPRING_LDAP_USERNAME
           value: "cn=admin,dc=circleguard,dc=edu"
         - name: SPRING_LDAP_PASSWORD

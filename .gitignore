@@ -46,3 +46,16 @@ web-build/
 *_data/
 pgdata/
 neo4jdata/
+
+# AI/Claude context
+.claude/
+
+# Temp work
+temp/
+temp-stage-auth.xml
+scratch/
+
+# Test outputs
+dashboard_test_output.txt
+**/test-output.txt
+tests/integration-tests/bin/
